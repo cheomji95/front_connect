@@ -1,5 +1,7 @@
+// main.dart
+// 메인 주석추가
 import 'dart:io';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'; 
 import 'package:provider/provider.dart';
 
 import 'screens/map_screen.dart';

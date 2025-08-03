@@ -35,14 +35,12 @@ class ProfileData {
 class ProfileService {
   static const _baseUrl = 'https://connect.io.kr';
 
-  /// GET /users/me → 최신 프로필 반환
+  /// 전체 프로필 조회
   static Future<ProfileData> fetchProfile() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('access_token');
 
-    if (token == null) {
-      throw Exception('토큰 없음: 로그인 필요');
-    }
+    if (token == null) throw Exception('토큰 없음: 로그인 필요');
 
     final dio = Dio();
     final response = await dio.get(
@@ -61,6 +59,28 @@ class ProfileService {
       throw Exception('인증 실패 (401 Unauthorized)');
     } else {
       throw Exception('프로필 조회 실패: ${response.statusCode}');
+    }
+  }
+
+  /// 아바타 URL만 조회
+  static Future<String> fetchAvatarUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access_token');
+
+    if (token == null) throw Exception('토큰 없음: 로그인 필요');
+
+    final dio = Dio();
+    final response = await dio.get(
+      '$_baseUrl/users/me/avatar-url',
+      options: Options(headers: {
+        'Authorization': 'Bearer $token',
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return response.data['avatar_url'] as String;
+    } else {
+      throw Exception('아바타 조회 실패: ${response.statusCode}');
     }
   }
 }

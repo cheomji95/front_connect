@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../services/profile_service.dart'; // ProfileData를 사용하기 위해 import
 
 class AvatarModel extends ChangeNotifier {
@@ -23,4 +26,26 @@ class AvatarModel extends ChangeNotifier {
     _nickname = data.nickname;
     notifyListeners();
   }
+
+  /// avatar-url API로부터 최신 URL만 불러오기
+  Future<void> fetchAvatarUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access_token');
+    if (token == null) return;
+
+    try {
+      final dio = Dio();
+      final res = await dio.get(
+        'https://connect.io.kr/users/me/avatar-url',
+        options: Options(headers: {
+          'Authorization': 'Bearer $token',
+        }),
+      );
+      _url = res.data['avatar_url'];
+      notifyListeners();
+    } catch (e) {
+      print('❌ 아바타 URL 로딩 실패: $e');
+    }
+  }
 }
+

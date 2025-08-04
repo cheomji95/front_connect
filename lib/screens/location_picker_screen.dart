@@ -1,12 +1,26 @@
 // lib/screens/location_picker_screen.dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:http/http.dart' as http;
+
+const String baseUrl = 'https://connect.io.kr';
+const String accessToken = 'YOUR_ACCESS_TOKEN';
 
 class LocationPickerScreen extends StatefulWidget {
-  const LocationPickerScreen({super.key});
+  final String? selectedYear;
+  final String? selectedRegion;
+  final List<String> selectedTags;
+
+  const LocationPickerScreen({
+    super.key,
+    this.selectedYear,
+    this.selectedRegion,
+    required this.selectedTags,
+  });
 
   @override
   State<LocationPickerScreen> createState() => _LocationPickerScreenState();
@@ -15,29 +29,63 @@ class LocationPickerScreen extends StatefulWidget {
 class _LocationPickerScreenState extends State<LocationPickerScreen> {
   GoogleMapController? _mapController;
 
-  LatLng? _currentPosition; // 초기 카메라 위치(현재 위치 또는 기본값)
-  LatLng? _selected;        // 선택된 좌표
-  Marker? _marker;          // 선택 마커
+  LatLng? _currentPosition;
+  LatLng? _selected;
+  Marker? _marker;
+  Set<Marker> _postMarkers = {};
 
   @override
   void initState() {
     super.initState();
     _initLocation();
+    _fetchMarkersFromSearch();
   }
 
   Future<void> _initLocation() async {
     final granted = await _ensureLocationPermission();
     if (!granted) {
-      // 권한 거부 시 서울로 기본 이동
       setState(() => _currentPosition = const LatLng(37.5665, 126.9780));
       return;
     }
-
     try {
       final pos = await Geolocator.getCurrentPosition();
       setState(() => _currentPosition = LatLng(pos.latitude, pos.longitude));
     } catch (_) {
-      setState(() => _currentPosition = const LatLng(37.5665, 126.9780));
+      setState(() => _currentPosition = const LatLatLng(37.5665, 126.9780));
+    }
+  }
+
+  Future<void> _fetchMarkersFromSearch() async {
+    final queryParams = {
+      if (widget.selectedYear != null) 'year': widget.selectedYear!,
+      if (widget.selectedRegion != null) 'region': widget.selectedRegion!,
+      if (widget.selectedTags.isNotEmpty) 'tags': widget.selectedTags.join(','),
+    };
+
+    final uri = Uri.parse('$baseUrl/posts/search').replace(queryParameters: queryParams);
+
+    try {
+      final response = await http.get(uri, headers: {
+        'Authorization': 'Bearer $accessToken',
+      });
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        setState(() {
+          _postMarkers = data.map((post) {
+            final lat = post['latitude'];
+            final lng = post['longitude'];
+            if (lat == null || lng == null) return null;
+            return Marker(
+              markerId: MarkerId('post_\${post['id']}'),
+              position: LatLng(lat, lng),
+              infoWindow: InfoWindow(title: post['title']),
+            );
+          }).whereType<Marker>().toSet();
+        });
+      }
+    } catch (e) {
+      debugPrint('📌 마커 불러오기 실패: \$e');
     }
   }
 
@@ -49,7 +97,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     return status.isGranted;
   }
 
-  // 🔍 간단 검색(지오코딩): 입력값 그대로 주소→좌표 변환
   Future<void> _openSearch() async {
     final q = await showSearch<String?>(
       context: context,
@@ -61,8 +108,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       final locations = await locationFromAddress(q.trim());
       if (locations.isEmpty) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('검색 결과가 없습니다.')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('검색 결과가 없습니다.')));
         return;
       }
       final first = locations.first;
@@ -70,26 +116,19 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       _moveAndMark(target, showSnack: true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('검색 실패: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('검색 실패: \$e')));
     }
   }
 
-  // 지도 탭으로 선택
   void _onMapTap(LatLng point) => _moveAndMark(point, showSnack: true);
 
-  // 카메라 이동 + 마커 표시 + 선택값 저장
   Future<void> _moveAndMark(LatLng target, {bool showSnack = false}) async {
-    // 간단한 역지오코딩으로 안내 문구
     String label = '위치 선택됨';
     try {
-      final placemarks =
-          await placemarkFromCoordinates(target.latitude, target.longitude);
+      final placemarks = await placemarkFromCoordinates(target.latitude, target.longitude);
       if (placemarks.isNotEmpty) {
         final p = placemarks.first;
-        label =
-            "${p.administrativeArea ?? ''} ${p.locality ?? ''} ${p.subLocality ?? ''}"
-                .trim();
+        label = "\${p.administrativeArea ?? ''} \${p.locality ?? ''} \${p.subLocality ?? ''}".trim();
       }
     } catch (_) {}
 
@@ -104,17 +143,14 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       );
     });
 
-    // 카메라 이동(적당한 줌)
     await _mapController?.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(target: target, zoom: 16),
-      ),
+      CameraUpdate.newCameraPosition(CameraPosition(target: target, zoom: 16)),
     );
 
     if (showSnack && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('📍 $label\n(${target.latitude}, ${target.longitude})'),
+          content: Text('📍 \$label\n(\${target.latitude}, \${target.longitude})'),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -124,12 +160,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   @override
   Widget build(BuildContext context) {
     if (_currentPosition == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final markers = <Marker>{if (_marker != null) _marker!};
+    final markers = <Marker>{if (_marker != null) _marker!, ..._postMarkers};
 
     return Scaffold(
       appBar: AppBar(
@@ -146,16 +180,12 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         children: [
           GoogleMap(
             onMapCreated: (c) => _mapController = c,
-            initialCameraPosition: CameraPosition(
-              target: _currentPosition!,
-              zoom: 14.0,
-            ),
+            initialCameraPosition: CameraPosition(target: _currentPosition!, zoom: 14.0),
             myLocationEnabled: true,
             myLocationButtonEnabled: true,
             onTap: _onMapTap,
             markers: markers,
           ),
-          // 하단 저장 버튼
           Positioned(
             left: 12,
             right: 12,
@@ -164,14 +194,12 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: _selected == null
-                      ? null
-                      : () => Navigator.pop<LatLng>(context, _selected),
+                  onPressed: _selected == null ? null : () => Navigator.pop<LatLng>(context, _selected),
                   icon: const Icon(Icons.check),
                   label: Text(
                     _selected == null
                         ? '지도를 탭하여 위치를 선택하세요'
-                        : '이 위치로 저장 (${_selected!.latitude.toStringAsFixed(5)}, ${_selected!.longitude.toStringAsFixed(5)})',
+                        : '이 위치로 저장 (\${_selected!.latitude.toStringAsFixed(5)}, \${_selected!.longitude.toStringAsFixed(5)})',
                   ),
                 ),
               ),
@@ -183,7 +211,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   }
 }
 
-// 🔍 간단 검색 Delegate (자동완성 없이, 입력 그대로 지오코딩)
 class _SimpleAddressSearchDelegate extends SearchDelegate<String?> {
   _SimpleAddressSearchDelegate()
       : super(

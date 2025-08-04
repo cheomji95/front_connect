@@ -25,32 +25,25 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
     tag = tag.trim();
     if (tag.isNotEmpty && !selectedTags.contains(tag)) {
       setState(() => selectedTags.add(tag));
-      _fetchPostsByFilter();
+      _onFilterChanged();
     }
   }
 
   void _removeTag(String tag) {
     setState(() => selectedTags.remove(tag));
-    _fetchPostsByFilter();
+    _onFilterChanged();
   }
 
-  void _onFilterChanged() {
-    _fetchPostsByFilter();
+  Future<void> _onFilterChanged() async {
+    await _fetchPostsByFilter();
   }
 
   Future<void> _fetchPostsByFilter() async {
     setState(() => isLoading = true);
 
     try {
-      // TODO: 실제 API 연동 예정
-      await Future.delayed(const Duration(seconds: 1)); // 임시 지연
-
-      final dummy = [
-        PostItem(id: 1, title: '벚꽃 여행', year: '2023', region: '서울'),
-        PostItem(id: 2, title: '한강에서의 산책', year: '2022', region: '서울'),
-      ];
-
-      setState(() => searchResults = dummy);
+      // TODO: 여기에 API 호출 붙이기
+      setState(() => searchResults = []);
     } catch (e) {
       debugPrint('❌ 게시글 검색 실패: $e');
       if (mounted) {
@@ -70,7 +63,6 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 필터 UI
             DropdownButtonFormField<String>(
               value: selectedYear,
               decoration: const InputDecoration(labelText: '연도'),
@@ -109,7 +101,7 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
                     _addTag(tagController.text);
                     tagController.clear();
                   },
-                ),
+                )
               ],
             ),
             const SizedBox(height: 8),
@@ -118,7 +110,9 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
               children: tagHints.map((hint) {
                 return ActionChip(
                   label: Text('# $hint'),
-                  onPressed: () => _addTag(hint),
+                  onPressed: () {
+                    _addTag(hint);
+                  },
                 );
               }).toList(),
             ),
@@ -132,7 +126,6 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
                 );
               }).toList(),
             ),
-
             const SizedBox(height: 24),
             const Divider(),
 
@@ -157,6 +150,7 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
                     title: Text(post.title),
                     subtitle: Text('${post.year}년 • ${post.region}'),
                     onTap: () {
+                      // TODO: 지도 이동 및 마커 선택 기능 연결
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('지도에서 게시글 ${post.id} 선택 예정')),
                       );
@@ -198,3 +192,4 @@ class PostItem {
     );
   }
 }
+

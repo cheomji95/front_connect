@@ -137,13 +137,15 @@ class _CommentSectionState extends State<CommentSection> {
   }
 
   Widget _buildComment(Map<String, dynamic> c, {int indent = 0}) {
-    final isMine = currentUserId != null && c['user_id'] == currentUserId;
-    final isDeleted = c['is_deleted'] == true;
-    final user = c['user'];
-    final nickname = user?['nickname'] ?? '익명';
-    final avatarUrl = user?['avatar_url'];
+  final isMine = currentUserId != null && c['user_id'] == currentUserId;
+  final isDeleted = c['is_deleted'] == true;
+  final user = c['user'];
+  final nickname = user?['nickname'] ?? '익명';
+  final avatarUrl = user?['avatar_url'];
 
-    return Padding(
+  // children 리스트 선언
+  List<Widget> children = [
+    Padding(
       padding: EdgeInsets.only(left: 16.0 * indent, bottom: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,15 +196,31 @@ class _CommentSectionState extends State<CommentSection> {
                 child: const Text('답글 달기', style: TextStyle(fontSize: 13)),
               ),
             ),
-          if (c['replies'] != null && c['replies'].isNotEmpty)
-            ...List.generate(
-              c['replies'].length,
-              (i) => _buildComment(c['replies'][i], indent: indent + 1),
-            ),
         ],
       ),
-    );
+    )
+  ];
+
+  // 중복 답글 방지 및 계층 구조 처리
+  if (c['replies'] != null && c['replies'] is List) {
+    final Set<int> seenIds = {};
+    for (var reply in c['replies']) {
+      if (reply is Map<String, dynamic> && reply['id'] is int) {
+        final id = reply['id'];
+        if (!seenIds.contains(id)) {
+          seenIds.add(id);
+          children.add(_buildComment(reply, indent: indent + 1));
+        }
+      }
+    }
   }
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: children,
+  );
+}
+
 
 
   @override

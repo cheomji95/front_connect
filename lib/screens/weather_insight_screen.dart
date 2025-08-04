@@ -1,4 +1,7 @@
 // weather_insight_screen.dart
+// 중략 생략 없음. 전체 제공
+
+// 기존 코드 상단은 동일합니다.
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -30,6 +33,16 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
 
   List<PostItem> searchResults = [];
   bool isLoading = false;
+
+  final int itemsPerPage = 5;
+
+  int get totalPages => (searchResults.length / itemsPerPage).ceil();
+
+  List<PostItem> getPageItems(int pageIndex) {
+    final start = pageIndex * itemsPerPage;
+    final end = (start + itemsPerPage).clamp(0, searchResults.length);
+    return searchResults.sublist(start, end);
+  }
 
   void _addTag(String tag) {
     tag = tag.trim();
@@ -192,25 +205,32 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
             else if (searchResults.isEmpty)
               const Text('검색 결과가 없습니다.')
             else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: searchResults.length,
-                itemBuilder: (context, index) {
-                  final post = searchResults[index];
-                  return ListTile(
-                    leading: post.thumbnailUrl != null
-                        ? Image.network(post.thumbnailUrl!, width: 48, height: 48, fit: BoxFit.cover)
-                        : const Icon(Icons.image_not_supported),
-                    title: Text(post.title),
-                    subtitle: Text('${post.year}년 • ${post.region}'),
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('지도에서 게시글 ${post.id} 선택 예정')),
-                      );
-                    },
-                  );
-                },
+              SizedBox(
+                height: 360,
+                child: PageView.builder(
+                  itemCount: totalPages,
+                  itemBuilder: (context, pageIndex) {
+                    final items = getPageItems(pageIndex);
+                    return ListView.builder(
+                      itemCount: items.length,
+                      itemBuilder: (context, index) {
+                        final post = items[index];
+                        return ListTile(
+                          leading: post.thumbnailUrl != null
+                              ? Image.network(post.thumbnailUrl!, width: 48, height: 48, fit: BoxFit.cover)
+                              : const Icon(Icons.image_not_supported),
+                          title: Text(post.title),
+                          subtitle: Text('${post.year}년 • ${post.region}'),
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('지도에서 게시글 ${post.id} 선택 예정')),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
           ],
         ),
@@ -239,12 +259,13 @@ class PostItem {
     return PostItem(
       id: json['id'],
       title: json['title'],
-      year: json['year'].toString(), // int → string
+      year: json['year'].toString(),
       region: json['region'],
       thumbnailUrl: images.isNotEmpty ? '$baseUrl${images[0]}' : null,
     );
   }
 }
+
 
 
 

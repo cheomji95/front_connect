@@ -1,7 +1,13 @@
 // weather_insight_screen.dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:http/http.dart' as http;
 import 'location_picker_screen.dart';
+
+const String baseUrl = 'https://connect.io.kr'; // 실제 배포 주소로 변경
+const String accessToken = 'YOUR_ACCESS_TOKEN'; // 토큰 교체 필수
+const double searchRadius = 30.0;
 
 class WeatherInsightScreen extends StatefulWidget {
   const WeatherInsightScreen({super.key});
@@ -13,13 +19,12 @@ class WeatherInsightScreen extends StatefulWidget {
 class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
   String? selectedYear;
   String? selectedRegion;
+  LatLng? selectedLatLng;
   final tagController = TextEditingController();
   final List<String> selectedTags = [];
 
-  double? selectedLatitude;
-  double? selectedLongitude;
-
-  final List<String> years = List.generate(30, (i) => (DateTime.now().year - i).toString());
+  final List<String> years =
+      List.generate(30, (i) => (DateTime.now().year - i).toString());
   final List<String> regions = ['서울', '경기', '강원', '충청', '전라', '경상', '제주', '울릉'];
   final List<String> tagHints = ['추억', '여행', '일기', '기록', '맛집', '풍경', '산책', '카페', '우연', '친구'];
 
@@ -40,7 +45,7 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
   }
 
   void _onFilterChanged() {
-    _fetchPostsByFilter();
+    searchPosts();
   }
 
   Future<void> _selectLocation() async {
@@ -48,27 +53,51 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
       context,
       MaterialPageRoute(builder: (_) => const LocationPickerScreen()),
     );
-
     if (result != null) {
-      setState(() {
-        selectedLatitude = result.latitude;
-        selectedLongitude = result.longitude;
-        _onFilterChanged();
-      });
+      setState(() => selectedLatLng = result);
+      _onFilterChanged();
     }
   }
 
-  Future<void> _fetchPostsByFilter() async {
+  Future<void> searchPosts() async {
     setState(() => isLoading = true);
 
     try {
-      // TODO: 백엔드 연동 시 여기에 API 호출 추가
-      await Future.delayed(const Duration(seconds: 1));
+      final queryParams = {
+        if (selectedYear != null && selectedYear!.isNotEmpty)
+          'year': selectedYear!,
+        if (selectedRegion != null && selectedRegion!.isNotEmpty)
+          'region': selectedRegion!,
+        if (selectedTags.isNotEmpty) 'tags': selectedTags.join(','),
+        if (selectedLatLng != null) ...{
+          'lat': selectedLatLng!.latitude.toString(),
+          'lng': selectedLatLng!.longitude.toString(),
+          'radius': searchRadius.toString(),
+        }
+      };
 
-      setState(() => searchResults = []); // 초기화 또는 API 결과 대입
+      final uri = Uri.parse('$baseUrl/posts/search').replace(queryParameters: queryParams);
+
+      print('▶️ 검색 요청 URI: $uri');
+
+      final response = await http.get(uri, headers: {
+        'Authorization': 'Bearer $accessToken',
+      });
+
+      print('▶️ 응답 상태: ${response.statusCode}');
+      print('▶️ 응답 바디: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        setState(() {
+          searchResults = data.map((item) => PostItem.fromJson(item)).toList();
+        });
+      } else {
+        throw Exception('검색 실패: ${response.statusCode}');
+      }
     } catch (e) {
-      debugPrint('❌ 게시글 검색 실패: $e');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('검색 실패: $e')));
+      debugPrint('검색 오류: $e');
+      setState(() => searchResults = []);
     } finally {
       setState(() => isLoading = false);
     }
@@ -87,14 +116,20 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
               value: selectedYear,
               decoration: const InputDecoration(labelText: '연도'),
               items: years.map((y) => DropdownMenuItem(value: y, child: Text(y))).toList(),
-              onChanged: (val) => setState(() => selectedYear = val),
+              onChanged: (val) {
+                setState(() => selectedYear = val);
+                _onFilterChanged();
+              },
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: selectedRegion,
               decoration: const InputDecoration(labelText: '지역'),
               items: regions.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
-              onChanged: (val) => setState(() => selectedRegion = val),
+              onChanged: (val) {
+                setState(() => selectedRegion = val);
+                _onFilterChanged();
+              },
             ),
             const SizedBox(height: 12),
             Row(
@@ -143,8 +178,8 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
               onPressed: _selectLocation,
               icon: const Icon(Icons.place),
               label: Text(
-                selectedLatitude != null && selectedLongitude != null
-                    ? '선택된 위치: (${selectedLatitude!.toStringAsFixed(4)}, ${selectedLongitude!.toStringAsFixed(4)})'
+                selectedLatLng != null
+                    ? '선택된 위치: (${selectedLatLng!.latitude.toStringAsFixed(4)}, ${selectedLatLng!.longitude.toStringAsFixed(4)})'
                     : '지도에서 위치 선택',
               ),
             ),
@@ -170,7 +205,6 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
                     title: Text(post.title),
                     subtitle: Text('${post.year}년 • ${post.region}'),
                     onTap: () {
-                      // TODO: 지도 이동 및 상세 연결 예정
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('지도에서 게시글 ${post.id} 선택 예정')),
                       );
@@ -201,16 +235,16 @@ class PostItem {
   });
 
   factory PostItem.fromJson(Map<String, dynamic> json) {
+    final List<dynamic> images = json['image_urls'] ?? json['images'] ?? [];
     return PostItem(
       id: json['id'],
       title: json['title'],
-      year: json['year'],
+      year: json['year'].toString(), // int → string
       region: json['region'],
-      thumbnailUrl: json['image_urls'] != null && json['image_urls'].isNotEmpty
-          ? 'https://connect.io.kr${json['image_urls'][0]}'
-          : null,
+      thumbnailUrl: images.isNotEmpty ? '$baseUrl${images[0]}' : null,
     );
   }
 }
+
 
 

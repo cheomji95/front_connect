@@ -42,7 +42,7 @@ class _EditPostScreenState extends State<EditPostScreen> {
     final p = widget.post;
     _titleCtrl = TextEditingController(text: p.title);
     _contentCtrl = TextEditingController(text: p.content);
-    _year = p.year;
+    _year = p.year.toString();
     _region = p.region;
     _tags = p.tags.map((m) => (m['name'] ?? '').toString()).where((e) => e.isNotEmpty).toList();
     _existingImageUrls = List<String>.from(p.imageUrls);

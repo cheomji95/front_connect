@@ -6,7 +6,7 @@ class Post {
   final String title;
   final String content;      // ✅ 화면에 쓸 "표시용 텍스트"
   final String? contentRaw;  // (옵션) 원본 JSON 문자열
-  final String year;
+  final int year;
   final String region;
   final double? latitude;   
   final double? longitude;

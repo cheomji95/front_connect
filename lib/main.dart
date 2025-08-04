@@ -16,6 +16,7 @@ import 'screens/my_post_screen.dart';
 import 'screens/my_post_create_screen.dart';
 import 'screens/friend_list_screen.dart';
 import 'screens/friend_detail_screen.dart';
+import 'screens/weather_insight_screen.dart';
 import 'models/friend_model.dart'; // ✅ 올바른 모델로 변경
 
 /// SSL 인증서 무시용 HttpOverrides
@@ -60,6 +61,8 @@ class MyApp extends StatelessWidget {
         '/my-posts': (context) => const MyPostsScreen(),
         '/friends': (context) => const FriendListScreen(),
         '/map': (context) => const MapScreen(),
+        '/weather-insight': (context) => const WeatherInsightScreen(),
+
         // ❌ '/friend-detail'은 onGenerateRoute로 이동
       },
       onGenerateRoute: (settings) {

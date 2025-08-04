@@ -210,7 +210,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () => Navigator.pushNamed(context, '/map'), // ✅ 안개 아이콘 클릭 시 MapScreen 이동
                   child: Image.asset('assets/icons/안개.png', width: 80, height: 80),
                 ),
-                Image.asset('assets/icons/일기예보.png', width: 80, height: 80),
+                GestureDetector(
+                  onTap: () => Navigator.pushNamed(context, '/weather-insight'),
+                  child: Image.asset('assets/icons/일기예보.png', width: 80, height: 80),
+                ),
               ],
             ),
           ],

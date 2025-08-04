@@ -66,17 +66,25 @@ class _EditPostScreenState extends State<EditPostScreen> {
   }
 
   Future<void> _pickLocation() async {
-    final LatLng? result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const LocationPickerScreen()),
-    );
-    if (result != null) {
-      setState(() {
-        _latitude = result.latitude;
-        _longitude = result.longitude;
-      });
-    }
+  final LatLng? result = await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => LocationPickerScreen(
+        selectedYear: null,        // ✅ null 또는 String
+        selectedRegion: null,      // ✅ null 또는 String
+        selectedTags: [],          // ✅ List<String>
+      ),
+    ),
+  );
+
+  if (result != null) {
+    setState(() {
+      _latitude = result.latitude;
+      _longitude = result.longitude;
+    });
   }
+}
+
 
   Future<void> _submit() async {
     if (_formKey.currentState?.validate() != true) return;

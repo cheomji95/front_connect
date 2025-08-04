@@ -53,7 +53,11 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
   Future<void> selectLocation() async {
     final LatLng? result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => LocationPickerScreen()),
+      MaterialPageRoute(builder: (_) => LocationPickerScreen(
+        selectedYear: selectedYear,
+        selectedRegion: selectedRegion,
+        selectedTags: [],
+      )),
     );
 
     if (result != null) {

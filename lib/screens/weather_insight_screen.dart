@@ -62,7 +62,13 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
   Future<void> _selectLocation() async {
     final LatLng? result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const LocationPickerScreen()),
+      MaterialPageRoute(
+        builder: (_) => LocationPickerScreen(
+          selectedYear: selectedYear,
+          selectedRegion: selectedRegion,
+          selectedTags: selectedTags,
+        ),
+      ),
     );
     if (result != null) {
       setState(() => selectedLatLng = result);

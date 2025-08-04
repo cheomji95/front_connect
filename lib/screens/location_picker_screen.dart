@@ -51,7 +51,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       final pos = await Geolocator.getCurrentPosition();
       setState(() => _currentPosition = LatLng(pos.latitude, pos.longitude));
     } catch (_) {
-      setState(() => _currentPosition = const LatLatLng(37.5665, 126.9780));
+      setState(() => _currentPosition = const LatLng(37.5665, 126.9780));
     }
   }
 
@@ -77,7 +77,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             final lng = post['longitude'];
             if (lat == null || lng == null) return null;
             return Marker(
-              markerId: MarkerId('post_\${post['id']}'),
+              markerId: MarkerId('post_${post['id']}'),
               position: LatLng(lat, lng),
               infoWindow: InfoWindow(title: post['title']),
             );
@@ -85,7 +85,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         });
       }
     } catch (e) {
-      debugPrint('📌 마커 불러오기 실패: \$e');
+      debugPrint('📌 마커 불러오기 실패: $e');
     }
   }
 
@@ -116,7 +116,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       _moveAndMark(target, showSnack: true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('검색 실패: \$e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('검색 실패: $e')));
     }
   }
 
@@ -128,7 +128,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       final placemarks = await placemarkFromCoordinates(target.latitude, target.longitude);
       if (placemarks.isNotEmpty) {
         final p = placemarks.first;
-        label = "\${p.administrativeArea ?? ''} \${p.locality ?? ''} \${p.subLocality ?? ''}".trim();
+        label = "${p.administrativeArea ?? ''} ${p.locality ?? ''} ${p.subLocality ?? ''}".trim();
       }
     } catch (_) {}
 
@@ -150,7 +150,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     if (showSnack && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('📍 \$label\n(\${target.latitude}, \${target.longitude})'),
+          content: Text('📍 $label\n(${target.latitude}, ${target.longitude})'),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -199,7 +199,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   label: Text(
                     _selected == null
                         ? '지도를 탭하여 위치를 선택하세요'
-                        : '이 위치로 저장 (\${_selected!.latitude.toStringAsFixed(5)}, \${_selected!.longitude.toStringAsFixed(5)})',
+                        : '이 위치로 저장 (${_selected!.latitude.toStringAsFixed(5)}, ${_selected!.longitude.toStringAsFixed(5)})',
                   ),
                 ),
               ),
@@ -255,3 +255,4 @@ class _SimpleAddressSearchDelegate extends SearchDelegate<String?> {
     );
   }
 }
+

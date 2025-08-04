@@ -139,6 +139,9 @@ class _CommentSectionState extends State<CommentSection> {
   Widget _buildComment(Map<String, dynamic> c, {int indent = 0}) {
     final isMine = currentUserId != null && c['user_id'] == currentUserId;
     final isDeleted = c['is_deleted'] == true;
+    final user = c['user'];
+    final nickname = user?['nickname'] ?? '익명';
+    final avatarUrl = user?['avatar_url'];
 
     return Padding(
       padding: EdgeInsets.only(left: 16.0 * indent, bottom: 8),
@@ -149,14 +152,12 @@ class _CommentSectionState extends State<CommentSection> {
             leading: isDeleted
                 ? null
                 : CircleAvatar(
-                    backgroundImage: c['user_avatar'] != null
-                        ? NetworkImage(c['user_avatar'])
+                    backgroundImage: avatarUrl != null
+                        ? NetworkImage('https://connect.io.kr$avatarUrl')
                         : null,
-                    child: c['user_avatar'] == null
-                        ? const Icon(Icons.person)
-                        : null,
+                    child: avatarUrl == null ? const Icon(Icons.person) : null,
                   ),
-            title: Text(isDeleted ? '알 수 없음' : (c['user_nickname'] ?? '익명')),
+            title: Text(isDeleted ? '알 수 없음' : nickname),
             subtitle: Text(
               isDeleted ? '[삭제된 댓글]' : c['content'],
               style: TextStyle(color: isDeleted ? Colors.grey : null),
@@ -186,7 +187,7 @@ class _CommentSectionState extends State<CommentSection> {
               child: TextButton(
                 onPressed: () {
                   setState(() {
-                    _controller.text = '@${c['user_nickname'] ?? ''} ';
+                    _controller.text = '@$nickname ';
                     _replyTo = c['id'];
                   });
                 },
@@ -194,12 +195,15 @@ class _CommentSectionState extends State<CommentSection> {
               ),
             ),
           if (c['replies'] != null && c['replies'].isNotEmpty)
-            ...List.generate(c['replies'].length,
-                (i) => _buildComment(c['replies'][i], indent: indent + 1)),
+            ...List.generate(
+              c['replies'].length,
+              (i) => _buildComment(c['replies'][i], indent: indent + 1),
+            ),
         ],
       ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {

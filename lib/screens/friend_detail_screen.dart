@@ -1,3 +1,4 @@
+// friend_detail_screen.dart
 import 'package:flutter/material.dart';
 import '../models/friend_model.dart';
 import '../models/post_model.dart';

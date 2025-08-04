@@ -1,7 +1,4 @@
 // weather_insight_screen.dart
-// 중략 생략 없음. 전체 제공
-
-// 기존 코드 상단은 동일합니다.
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -35,11 +32,12 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
   bool isLoading = false;
 
   final int itemsPerPage = 5;
+  int currentPageIndex = 0;
 
   int get totalPages => (searchResults.length / itemsPerPage).ceil();
 
-  List<PostItem> getPageItems(int pageIndex) {
-    final start = pageIndex * itemsPerPage;
+  List<PostItem> getPageItems() {
+    final start = currentPageIndex * itemsPerPage;
     final end = (start + itemsPerPage).clamp(0, searchResults.length);
     return searchResults.sublist(start, end);
   }
@@ -69,6 +67,18 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
     if (result != null) {
       setState(() => selectedLatLng = result);
       _onFilterChanged();
+    }
+  }
+
+  void _goToPreviousPage() {
+    if (currentPageIndex > 0) {
+      setState(() => currentPageIndex--);
+    }
+  }
+
+  void _goToNextPage() {
+    if (currentPageIndex < totalPages - 1) {
+      setState(() => currentPageIndex++);
     }
   }
 
@@ -104,6 +114,7 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
         final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
         setState(() {
           searchResults = data.map((item) => PostItem.fromJson(item)).toList();
+          currentPageIndex = 0; // 검색 시 첫 페이지로 초기화
         });
       } else {
         throw Exception('검색 실패: ${response.statusCode}');
@@ -204,34 +215,45 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
               const Center(child: CircularProgressIndicator())
             else if (searchResults.isEmpty)
               const Text('검색 결과가 없습니다.')
-            else
-              SizedBox(
-                height: 360,
-                child: PageView.builder(
-                  itemCount: totalPages,
-                  itemBuilder: (context, pageIndex) {
-                    final items = getPageItems(pageIndex);
-                    return ListView.builder(
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        final post = items[index];
-                        return ListTile(
-                          leading: post.thumbnailUrl != null
-                              ? Image.network(post.thumbnailUrl!, width: 48, height: 48, fit: BoxFit.cover)
-                              : const Icon(Icons.image_not_supported),
-                          title: Text(post.title),
-                          subtitle: Text('${post.year}년 • ${post.region}'),
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('지도에서 게시글 ${post.id} 선택 예정')),
-                            );
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
+            else ...[
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: getPageItems().length,
+                itemBuilder: (context, index) {
+                  final post = getPageItems()[index];
+                  return ListTile(
+                    leading: post.thumbnailUrl != null
+                        ? Image.network(post.thumbnailUrl!, width: 48, height: 48, fit: BoxFit.cover)
+                        : const Icon(Icons.image_not_supported),
+                    title: Text(post.title),
+                    subtitle: Text('${post.year}년 • ${post.region}'),
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('지도에서 게시글 ${post.id} 선택 예정')),
+                      );
+                    },
+                  );
+                },
               ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: currentPageIndex > 0 ? _goToPreviousPage : null,
+                    child: const Text('← 이전'),
+                  ),
+                  const SizedBox(width: 16),
+                  Text('페이지 ${currentPageIndex + 1} / $totalPages'),
+                  const SizedBox(width: 16),
+                  ElevatedButton(
+                    onPressed: currentPageIndex < totalPages - 1 ? _goToNextPage : null,
+                    child: const Text('다음 →'),
+                  ),
+                ],
+              ),
+            ]
           ],
         ),
       ),

@@ -1,5 +1,7 @@
 // weather_insight_screen.dart
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'location_picker_screen.dart';
 
 class WeatherInsightScreen extends StatefulWidget {
   const WeatherInsightScreen({super.key});
@@ -13,6 +15,9 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
   String? selectedRegion;
   final tagController = TextEditingController();
   final List<String> selectedTags = [];
+
+  double? selectedLatitude;
+  double? selectedLongitude;
 
   final List<String> years = List.generate(30, (i) => (DateTime.now().year - i).toString());
   final List<String> regions = ['서울', '경기', '강원', '충청', '전라', '경상', '제주', '울릉'];
@@ -34,21 +39,36 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
     _onFilterChanged();
   }
 
-  Future<void> _onFilterChanged() async {
-    await _fetchPostsByFilter();
+  void _onFilterChanged() {
+    _fetchPostsByFilter();
+  }
+
+  Future<void> _selectLocation() async {
+    final LatLng? result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const LocationPickerScreen()),
+    );
+
+    if (result != null) {
+      setState(() {
+        selectedLatitude = result.latitude;
+        selectedLongitude = result.longitude;
+        _onFilterChanged();
+      });
+    }
   }
 
   Future<void> _fetchPostsByFilter() async {
     setState(() => isLoading = true);
 
     try {
-      // TODO: 여기에 API 호출 붙이기
-      setState(() => searchResults = []);
+      // TODO: 백엔드 연동 시 여기에 API 호출 추가
+      await Future.delayed(const Duration(seconds: 1));
+
+      setState(() => searchResults = []); // 초기화 또는 API 결과 대입
     } catch (e) {
       debugPrint('❌ 게시글 검색 실패: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('검색 실패: $e')));
-      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('검색 실패: $e')));
     } finally {
       setState(() => isLoading = false);
     }
@@ -67,20 +87,14 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
               value: selectedYear,
               decoration: const InputDecoration(labelText: '연도'),
               items: years.map((y) => DropdownMenuItem(value: y, child: Text(y))).toList(),
-              onChanged: (val) {
-                setState(() => selectedYear = val);
-                _onFilterChanged();
-              },
+              onChanged: (val) => setState(() => selectedYear = val),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: selectedRegion,
               decoration: const InputDecoration(labelText: '지역'),
               items: regions.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
-              onChanged: (val) {
-                setState(() => selectedRegion = val);
-                _onFilterChanged();
-              },
+              onChanged: (val) => setState(() => selectedRegion = val),
             ),
             const SizedBox(height: 12),
             Row(
@@ -110,9 +124,7 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
               children: tagHints.map((hint) {
                 return ActionChip(
                   label: Text('# $hint'),
-                  onPressed: () {
-                    _addTag(hint);
-                  },
+                  onPressed: () => _addTag(hint),
                 );
               }).toList(),
             ),
@@ -126,12 +138,20 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
                 );
               }).toList(),
             ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _selectLocation,
+              icon: const Icon(Icons.place),
+              label: Text(
+                selectedLatitude != null && selectedLongitude != null
+                    ? '선택된 위치: (${selectedLatitude!.toStringAsFixed(4)}, ${selectedLongitude!.toStringAsFixed(4)})'
+                    : '지도에서 위치 선택',
+              ),
+            ),
             const SizedBox(height: 24),
             const Divider(),
-
             const Text('📄 검색 결과', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-
             if (isLoading)
               const Center(child: CircularProgressIndicator())
             else if (searchResults.isEmpty)
@@ -150,7 +170,7 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
                     title: Text(post.title),
                     subtitle: Text('${post.year}년 • ${post.region}'),
                     onTap: () {
-                      // TODO: 지도 이동 및 마커 선택 기능 연결
+                      // TODO: 지도 이동 및 상세 연결 예정
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('지도에서 게시글 ${post.id} 선택 예정')),
                       );
@@ -192,4 +212,5 @@ class PostItem {
     );
   }
 }
+
 

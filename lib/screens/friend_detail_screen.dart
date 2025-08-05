@@ -32,7 +32,7 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
     try {
       final newPosts = await _postService.getPostsByUserId(
         widget.friend.id,
-        page: 1, // 전체를 불러온 후 페이지네이션 처리
+        page: 1,
         pageSize: 1000,
       );
       setState(() {
@@ -156,6 +156,10 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final fullAvatarUrl = widget.friend.avatarUrl != null
+        ? '$baseUrl${widget.friend.avatarUrl!}'
+        : null;
+
     return Scaffold(
       appBar: AppBar(title: Text(widget.friend.nickname)),
       body: Padding(
@@ -167,10 +171,10 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
               children: [
                 CircleAvatar(
                   radius: 40,
-                  backgroundImage: widget.friend.avatarUrl != null
-                      ? NetworkImage(widget.friend.avatarUrl!)
+                  backgroundImage: fullAvatarUrl != null
+                      ? NetworkImage(fullAvatarUrl)
                       : null,
-                  child: widget.friend.avatarUrl == null
+                  child: fullAvatarUrl == null
                       ? const Icon(Icons.person, size: 40)
                       : null,
                 ),

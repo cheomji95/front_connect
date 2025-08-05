@@ -12,6 +12,8 @@ import '../services/friend_service.dart';
 import '../services/post_service.dart';
 import '../core/jwt_storage.dart';
 
+const String baseUrl = 'https://connect.io.kr';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -210,7 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 8),
               ...pagedPosts.map((p) => ListTile(
                     leading: p.imageUrls.isNotEmpty
-                        ? Image.network(p.imageUrls.first, width: 48, height: 48, fit: BoxFit.cover)
+                        ? Image.network('$baseUrl${p.imageUrls.first}', width: 48, height: 48, fit: BoxFit.cover)
                         : const Icon(Icons.image_not_supported),
                     title: Text(p.title),
                     subtitle: Text('${p.year} · ${p.region}'),

@@ -24,6 +24,13 @@ class _HomeScreenState extends State<HomeScreen> {
   List<RecentFriend> recentFriends = [];
   List<Post> myPosts = [];
   bool showMyPosts = false;
+  int currentPage = 0;
+
+  List<Post> get pagedPosts {
+    final start = currentPage * 3;
+    final end = (start + 3).clamp(0, myPosts.length);
+    return myPosts.sublist(start, end);
+  }
 
   @override
   void initState() {
@@ -58,23 +65,24 @@ class _HomeScreenState extends State<HomeScreen> {
         recentFriends = friends.take(3).toList();
       });
     } catch (e) {
-      debugPrint('❌ 친구 목록 로딩 실패: $e');
+      debugPrint('❌ 최근 친구 목록 로드 실패: $e');
     }
   }
 
   Future<void> _loadMyPosts() async {
-    final token = await JwtStorage.getAccessToken();     // ✅ 토큰은 인증에 사용
-    final userId = await JwtStorage.getUserId();         // ✅ userId를 따로 불러옴
+    final token = await JwtStorage.getAccessToken();
+    final userId = await JwtStorage.getUserId();
     if (token == null || userId == null) return;
 
     try {
-      final posts = await PostService.getUserPosts(userId); // ✅ userId 넘김 (int)
+      final posts = await PostService.getUserPosts(userId);
       setState(() {
         myPosts = posts;
+        currentPage = 0;
         showMyPosts = true;
       });
     } catch (e) {
-      debugPrint('❌ 게시글 로딩 실패: $e');
+      debugPrint('❌ 게시글 로드 실패: $e');
     }
   }
 
@@ -124,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("친구 목록"),
+                      const Text('친구 목록'),
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -134,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: GestureDetector(
                                 onTap: () {
                                   final friend = Friend(
-                                    id: int.parse(f.id.toString()), // ✅ 수정 완료: int 그대로 전달
+                                    id: int.parse(f.id.toString()),
                                     nickname: f.nickname,
                                     avatarUrl: f.avatarUrl,
                                     introduction: f.introduction,
@@ -200,23 +208,42 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 16),
               const Text('내 게시글', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              ...myPosts.map((p) => ListTile(
+              ...pagedPosts.map((p) => ListTile(
+                    leading: p.imageUrls.isNotEmpty
+                        ? Image.network(p.imageUrls.first, width: 48, height: 48, fit: BoxFit.cover)
+                        : const Icon(Icons.image_not_supported),
                     title: Text(p.title),
                     subtitle: Text('${p.year} · ${p.region}'),
-                    onTap: () {
-                      // TODO: 일치도 분석 및 미리보기 기능
-                    },
+                    onTap: () {},
                   )),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: currentPage > 0 ? () => setState(() => currentPage--) : null,
+                  ),
+                  Text('${currentPage + 1} / ${((myPosts.length - 1) / 3).floor() + 1}'),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_forward),
+                    onPressed: (currentPage + 1) * 3 < myPosts.length
+                        ? () => setState(() => currentPage++)
+                        : null,
+                  ),
+                ],
+              ),
             ],
 
             const SizedBox(height: 16),
 
-            Column(
-              children: [
-                Image.asset('assets/icons/구름.png', height: 140),
-                const SizedBox(height: 8),
-                const Text('50%', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              ],
+            Center(
+              child: Column(
+                children: [
+                  Image.asset('assets/icons/구름.png', width: 120),
+                  const SizedBox(height: 8),
+                  const Text('50%', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                ],
+              ),
             ),
 
             const SizedBox(height: 16),

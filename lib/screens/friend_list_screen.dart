@@ -169,6 +169,7 @@ class _FriendListScreenState extends State<FriendListScreen> {
     Widget? trailing,
     VoidCallback? onTap,
   }) {
+    debugPrint('🖼 avatarUrl: $avatarUrl');
     return ListTile(
       leading: CircleAvatar(
         backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,

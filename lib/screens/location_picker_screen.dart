@@ -1,4 +1,4 @@
-// lib/screens/location_picker_screen.dart
+// location_picker_screen.dart (수정됨)
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -6,6 +6,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
+import '../models/post_model.dart';
+import 'post_detail_screen.dart';
 
 const String baseUrl = 'https://connect.io.kr';
 const String accessToken = 'YOUR_ACCESS_TOKEN';
@@ -33,6 +35,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   LatLng? _selected;
   Marker? _marker;
   Set<Marker> _postMarkers = {};
+  Post? _selectedPost;
 
   @override
   void initState() {
@@ -79,7 +82,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             return Marker(
               markerId: MarkerId('post_${post['id']}'),
               position: LatLng(lat, lng),
-              infoWindow: InfoWindow(title: post['title']),
+              onTap: () {
+                setState(() {
+                  _selectedPost = Post.fromJson(post);
+                });
+              },
             );
           }).whereType<Marker>().toSet();
         });
@@ -186,6 +193,35 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             onTap: _onMapTap,
             markers: markers,
           ),
+
+          if (_selectedPost != null)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 80,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PostDetailScreen(post: _selectedPost!),
+                    ),
+                  );
+                },
+                child: Card(
+                  elevation: 4,
+                  child: ListTile(
+                    leading: _selectedPost!.imageUrls.isNotEmpty
+                        ? Image.network('$baseUrl${_selectedPost!.imageUrls[0]}', width: 50, height: 50, fit: BoxFit.cover)
+                        : const Icon(Icons.image),
+                    title: Text(_selectedPost!.title),
+                    subtitle: Text('${_selectedPost!.year}년 · ${_selectedPost!.region}'),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                  ),
+                ),
+              ),
+            ),
+
           Positioned(
             left: 12,
             right: 12,
@@ -255,4 +291,3 @@ class _SimpleAddressSearchDelegate extends SearchDelegate<String?> {
     );
   }
 }
-

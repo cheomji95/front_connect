@@ -7,8 +7,8 @@ import 'location_picker_screen.dart';
 import 'post_detail_screen.dart';
 import '../models/post_model.dart';
 
-const String baseUrl = 'https://connect.io.kr'; // 실제 배포 주소로 변경
-const String accessToken = 'YOUR_ACCESS_TOKEN'; // 토큰 교체 필수
+const String baseUrl = 'https://connect.io.kr';
+const String accessToken = 'YOUR_ACCESS_TOKEN';
 const double searchRadius = 30.0;
 
 class WeatherInsightScreen extends StatefulWidget {
@@ -109,20 +109,15 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
 
       final uri = Uri.parse('$baseUrl/posts/search').replace(queryParameters: queryParams);
 
-      print('▶️ 검색 요청 URI: $uri');
-
       final response = await http.get(uri, headers: {
         'Authorization': 'Bearer $accessToken',
       });
-
-      print('▶️ 응답 상태: ${response.statusCode}');
-      print('▶️ 응답 바디: ${response.body}');
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
         setState(() {
           searchResults = data.map((item) => PostItem.fromJson(item)).toList();
-          currentPageIndex = 0; // 검색 시 첫 페이지로 초기화
+          currentPageIndex = 0;
         });
       } else {
         throw Exception('검색 실패: ${response.statusCode}');
@@ -244,12 +239,11 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
                             post: Post(
                               id: post.id,
                               title: post.title,
-                              content: '', // 실제 본문 필요 시 추가 요청
+                              content: post.content,
                               year: int.parse(post.year),
                               region: post.region,
-                              tags: [],
+                              tags: post.tags.cast<Map<String, dynamic>>(),
                               imageUrls: post.thumbnailUrl != null ? [post.thumbnailUrl!] : [],
-                              createdAt: DateTime.now(),
                             ),
                           ),
                         ),
@@ -283,13 +277,14 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
   }
 }
 
-
 class PostItem {
   final int id;
   final String title;
   final String content;
   final String year;
   final String region;
+  final List<dynamic> tags;
+  final String createdAt;
   final String? thumbnailUrl;
 
   PostItem({
@@ -298,17 +293,21 @@ class PostItem {
     required this.content,
     required this.year,
     required this.region,
+    required this.tags,
+    required this.createdAt,
     this.thumbnailUrl,
   });
 
   factory PostItem.fromJson(Map<String, dynamic> json) {
     final List<dynamic> images = json['image_urls'] ?? json['images'] ?? [];
     return PostItem(
-      id: json['id'],
-      title: json['title'],
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      title: json['title'] ?? '',
       content: json['content'] ?? '',
       year: json['year'].toString(),
-      region: json['region'],
+      region: json['region'] ?? '',
+      tags: json['tags'] ?? [],
+      createdAt: json['created_at'] ?? '',
       thumbnailUrl: images.isNotEmpty ? '$baseUrl${images[0]}' : null,
     );
   }

@@ -43,19 +43,20 @@ class Post {
     } catch (_) {}
 
     return Post(
-      id: json['id'],
+      id: int.tryParse(json['id'].toString()) ?? 0,
       title: json['title'] ?? '',
       content: display,
       contentRaw: raw,
-      year: json['year'] is int ? json['year'] : int.tryParse(json['year'].toString()) ?? 0,
+      year: int.tryParse(json['year'].toString()) ?? 0,
       region: json['region'] ?? '',
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       tags: List<Map<String, dynamic>>.from(json['tags'] ?? []),
       imageUrls: List<String>.from(json['images'] ?? []),
       createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'])
-          : null, // ✅ null 허용
+          ? DateTime.tryParse(json['created_at']) ?? DateTime.now()
+          : DateTime.now(),
     );
   }
 }
+

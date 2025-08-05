@@ -14,7 +14,7 @@ class RecentFriend {
 
   factory RecentFriend.fromJson(Map<String, dynamic> json) {
     return RecentFriend(
-      id: json['id'],
+      id: int.parse(json['id'].toString()),
       nickname: json['nickname'],
       avatarUrl: json['avatar_url'],
       introduction: json['introduction'],

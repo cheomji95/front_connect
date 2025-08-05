@@ -1,12 +1,15 @@
+// home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 
 import '../models/avatar_model.dart';
 import '../models/recent_friend.dart';
-import '../models/friend_model.dart'; // ✅ Friend 모델 import
+import '../models/friend_model.dart';
+import '../models/post_model.dart';
 import '../services/profile_service.dart';
 import '../services/friend_service.dart';
+import '../services/post_service.dart';
 import '../core/jwt_storage.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -19,6 +22,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _friendService = FriendService(Dio());
   List<RecentFriend> recentFriends = [];
+  List<Post> myPosts = [];
+  bool showMyPosts = false;
 
   @override
   void initState() {
@@ -57,6 +62,22 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadMyPosts() async {
+    final token = await JwtStorage.getAccessToken();     // ✅ 토큰은 인증에 사용
+    final userId = await JwtStorage.getUserId();         // ✅ userId를 따로 불러옴
+    if (token == null || userId == null) return;
+
+    try {
+      final posts = await PostService.getUserPosts(userId); // ✅ userId 넘김 (int)
+      setState(() {
+        myPosts = posts;
+        showMyPosts = true;
+      });
+    } catch (e) {
+      debugPrint('❌ 게시글 로딩 실패: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final avatarUrl = context.watch<AvatarModel>().url;
@@ -79,8 +100,8 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 프로필 + 친구 썸네일
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -113,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: GestureDetector(
                                 onTap: () {
                                   final friend = Friend(
-                                    id: f.id,
+                                    id: int.parse(f.id.toString()), // ✅ 수정 완료: int 그대로 전달
                                     nickname: f.nickname,
                                     avatarUrl: f.avatarUrl,
                                     introduction: f.introduction,
@@ -142,7 +163,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             );
                           }).toList(),
-                          // ➕ 더보기 버튼
                           GestureDetector(
                             onTap: () => Navigator.pushNamed(context, '/friends'),
                             child: Column(
@@ -167,14 +187,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 16),
 
-            const Column(
+            Column(
               children: [
-                FilterButton(label: '게시글 제목'),
-                FilterButton(label: '연도 설정'),
-                FilterButton(label: '지역'),
-                FilterButton(label: '연관 태그'),
+                FilterButton(label: '게시글 제목', onTap: _loadMyPosts),
+                const FilterButton(label: '연도 설정'),
+                const FilterButton(label: '지역'),
+                const FilterButton(label: '연관 태그'),
               ],
             ),
+
+            if (showMyPosts) ...[
+              const SizedBox(height: 16),
+              const Text('내 게시글', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              ...myPosts.map((p) => ListTile(
+                    title: Text(p.title),
+                    subtitle: Text('${p.year} · ${p.region}'),
+                    onTap: () {
+                      // TODO: 일치도 분석 및 미리보기 기능
+                    },
+                  )),
+            ],
 
             const SizedBox(height: 16),
 
@@ -207,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Image.asset('assets/icons/이슬.png', width: 80, height: 80),
                 ),
                 GestureDetector(
-                  onTap: () => Navigator.pushNamed(context, '/map'), // ✅ 안개 아이콘 클릭 시 MapScreen 이동
+                  onTap: () => Navigator.pushNamed(context, '/map'),
                   child: Image.asset('assets/icons/안개.png', width: 80, height: 80),
                 ),
                 GestureDetector(
@@ -225,7 +258,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class FilterButton extends StatelessWidget {
   final String label;
-  const FilterButton({super.key, required this.label});
+  final VoidCallback? onTap;
+  const FilterButton({super.key, required this.label, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -234,10 +268,11 @@ class FilterButton extends StatelessWidget {
       child: SizedBox(
         width: double.infinity,
         child: OutlinedButton(
-          onPressed: () {},
+          onPressed: onTap,
           child: Text(label),
         ),
       ),
     );
   }
 }
+

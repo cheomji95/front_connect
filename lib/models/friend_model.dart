@@ -1,3 +1,4 @@
+//friend_model.dart
 class Friend {
   final int id;
   final String nickname;

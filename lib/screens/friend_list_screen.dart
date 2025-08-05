@@ -169,11 +169,14 @@ class _FriendListScreenState extends State<FriendListScreen> {
     Widget? trailing,
     VoidCallback? onTap,
   }) {
-    debugPrint('🖼 avatarUrl: $avatarUrl');
+    final fullUrl = avatarUrl != null
+        ? 'https://connect.io.kr$avatarUrl' // ← 여기에 실제 서버 주소 입력
+        : null;
+
     return ListTile(
       leading: CircleAvatar(
-        backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-        child: avatarUrl == null ? const Icon(Icons.person) : null,
+        backgroundImage: fullUrl != null ? NetworkImage(fullUrl) : null,
+        child: fullUrl == null ? const Icon(Icons.person) : null,
       ),
       title: Text(nickname),
       subtitle: Text(introduction ?? ''),
@@ -181,6 +184,7 @@ class _FriendListScreenState extends State<FriendListScreen> {
       onTap: onTap,
     );
   }
+
 
   @override
   Widget build(BuildContext context) {

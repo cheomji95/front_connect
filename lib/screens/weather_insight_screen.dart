@@ -287,6 +287,7 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
 class PostItem {
   final int id;
   final String title;
+  final String content;
   final String year;
   final String region;
   final String? thumbnailUrl;
@@ -294,6 +295,7 @@ class PostItem {
   PostItem({
     required this.id,
     required this.title,
+    required this.content,
     required this.year,
     required this.region,
     this.thumbnailUrl,
@@ -304,6 +306,7 @@ class PostItem {
     return PostItem(
       id: json['id'],
       title: json['title'],
+      content: json['content'] ?? '',
       year: json['year'].toString(),
       region: json['region'],
       thumbnailUrl: images.isNotEmpty ? '$baseUrl${images[0]}' : null,

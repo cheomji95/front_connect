@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'location_picker_screen.dart';
+import 'post_detail_screen.dart';
+import '../models/post_model.dart';
 
 const String baseUrl = 'https://connect.io.kr'; // 실제 배포 주소로 변경
 const String accessToken = 'YOUR_ACCESS_TOKEN'; // 토큰 교체 필수
@@ -235,8 +237,22 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
                     title: Text(post.title),
                     subtitle: Text('${post.year}년 • ${post.region}'),
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('지도에서 게시글 ${post.id} 선택 예정')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PostDetailScreen(
+                            post: Post(
+                              id: post.id,
+                              title: post.title,
+                              content: '', // 실제 본문 필요 시 추가 요청
+                              year: int.parse(post.year),
+                              region: post.region,
+                              tags: [],
+                              imageUrls: post.thumbnailUrl != null ? [post.thumbnailUrl!] : [],
+                              createdAt: DateTime.now(),
+                            ),
+                          ),
+                        ),
                       );
                     },
                   );
@@ -267,6 +283,7 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
   }
 }
 
+
 class PostItem {
   final int id;
   final String title;
@@ -293,7 +310,4 @@ class PostItem {
     );
   }
 }
-
-
-
 

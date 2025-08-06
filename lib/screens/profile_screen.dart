@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/avatar_model.dart';
 import '../services/auth_service.dart';
@@ -98,6 +99,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // 저장된 토큰 및 사용자 정보 제거
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+  }
+
   @override
   void dispose() {
     nicknameController.dispose();
@@ -124,13 +132,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: cacheBustedUrl == null
                         ? const CircleAvatar(
                             radius: 60,
-                            child:
-                                Icon(Icons.person, size: 60, color: Colors.grey),
+                            child: Icon(Icons.person,
+                                size: 60, color: Colors.grey),
                           )
                         : FutureBuilder<Uint8List>(
                             future: _fetchImageBytes(cacheBustedUrl),
                             builder: (context, snap) {
-                              if (snap.connectionState != ConnectionState.done) {
+                              if (snap.connectionState !=
+                                  ConnectionState.done) {
                                 return const SizedBox(
                                   width: 120,
                                   height: 120,
@@ -191,6 +200,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           )
                         : const Text('프로필 저장'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextButton.icon(
+                    onPressed: _logout,
+                    icon: const Icon(Icons.logout, color: Colors.red),
+                    label: const Text(
+                      '로그아웃',
+                      style: TextStyle(color: Colors.red),
+                    ),
                   ),
                 ],
               ),

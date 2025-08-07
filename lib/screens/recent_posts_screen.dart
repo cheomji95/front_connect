@@ -118,7 +118,7 @@ class _RecentPostsScreenState extends State<RecentPostsScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => PostDetailScreen(post: post),
+                                    builder: (context) => PostDetailScreen(postId: post.id),
                                   ),
                                 );
                               },

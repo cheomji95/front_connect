@@ -5,7 +5,6 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'location_picker_screen.dart';
 import 'post_detail_screen.dart';
-import '../models/post_model.dart';
 
 const String baseUrl = 'https://connect.io.kr';
 const String accessToken = 'YOUR_ACCESS_TOKEN';
@@ -235,20 +234,10 @@ class _WeatherInsightScreenState extends State<WeatherInsightScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => PostDetailScreen(
-                            post: Post(
-                              id: post.id,
-                              title: post.title,
-                              content: post.content,
-                              year: int.parse(post.year),
-                              region: post.region,
-                              tags: post.tags.cast<Map<String, dynamic>>(),
-                              imageUrls: post.thumbnailUrl != null ? [post.thumbnailUrl!] : [],
-                            ),
-                          ),
+                          builder: (_) => PostDetailScreen(postId: post.id),
                         ),
                       );
-                    },
+                    }
                   );
                 },
               ),

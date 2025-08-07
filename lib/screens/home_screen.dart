@@ -7,6 +7,7 @@ import '../models/avatar_model.dart';
 import '../models/recent_friend.dart';
 import '../models/friend_model.dart';
 import '../models/post_model.dart';
+import '../models/matched_post.dart';
 import '../services/profile_service.dart';
 import '../services/friend_service.dart';
 import '../services/post_service.dart';
@@ -27,6 +28,11 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Post> myPosts = [];
   bool showMyPosts = false;
   int currentPage = 0;
+
+  Post? _selectedPost;
+  List<MatchedPost> _matchedPosts = [];
+  int _matchRate = 0;
+  int _currentMatchIndex = 0;
 
   List<Post> get pagedPosts {
     final start = currentPage * 3;
@@ -175,8 +181,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           }).toList(),
                           GestureDetector(
                             onTap: () => Navigator.pushNamed(context, '/friends'),
-                            child: const Column(
-                              children: [
+                            child: Column(
+                              children: const [
                                 CircleAvatar(
                                   radius: 24,
                                   backgroundColor: Color(0xFFE0D7F7),
@@ -200,9 +206,13 @@ class _HomeScreenState extends State<HomeScreen> {
             Column(
               children: [
                 FilterButton(label: '게시글 제목', onTap: _loadMyPosts),
-                const FilterButton(label: '연도 설정'),
-                const FilterButton(label: '지역'),
-                const FilterButton(label: '연관 태그'),
+                FilterButton(label: '연도: ${_selectedPost?.year ?? '미선택'}'),
+                FilterButton(label: '지역: ${_selectedPost?.region ?? '미선택'}'),
+                FilterButton(
+                  label: '태그: ${_selectedPost?.tags.map((t) => t['name']).join(', ') ?? '미선택'}',
+                ),
+
+
               ],
             ),
 
@@ -216,7 +226,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         : const Icon(Icons.image_not_supported),
                     title: Text(p.title),
                     subtitle: Text('${p.year} · ${p.region}'),
-                    onTap: () {},
+                    onTap: () {
+                      setState(() {
+                        _selectedPost = p;
+                      });
+                    },
                   )),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -241,12 +255,80 @@ class _HomeScreenState extends State<HomeScreen> {
             Center(
               child: Column(
                 children: [
-                  Image.asset('assets/icons/구름.png', width: 120),
+                  // 구름 이미지 (탭 시 연관도 API 호출)
+                  GestureDetector(
+                    onTap: _onCloudTap,
+                    child: Image.asset('assets/icons/구름.png', width: 120),
+                  ),
                   const SizedBox(height: 8),
-                  const Text('50%', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+
+                  // 유사도 퍼센트 표시
+                  Text(
+                    '$_matchRate%',
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // 유사 게시글 제목 표시
+                  if (_matchedPosts.isNotEmpty)
+                    GestureDetector(
+                      onTap: () {
+                        final postId = _matchedPosts[_currentMatchIndex].postId;
+
+                        Navigator.pushNamed(
+                          context,
+                          '/post-detail',
+                          arguments: postId, // 🔥 postId만 넘김
+                        );
+                      },
+                      child: Text(
+                        _matchedPosts[_currentMatchIndex].title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.underline,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ),
+
+                  const SizedBox(height: 8),
+
+                  // 좌우 넘기기 버튼
+                  if (_matchedPosts.length > 1)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back),
+                          onPressed: _currentMatchIndex > 0
+                              ? () {
+                                  setState(() {
+                                    _currentMatchIndex--;
+                                    _matchRate = _matchedPosts[_currentMatchIndex].matchRate;
+                                  });
+                                }
+                              : null,
+                        ),
+                        Text('${_currentMatchIndex + 1} / ${_matchedPosts.length}'),
+                        IconButton(
+                          icon: const Icon(Icons.arrow_forward),
+                          onPressed: _currentMatchIndex < _matchedPosts.length - 1
+                              ? () {
+                                  setState(() {
+                                    _currentMatchIndex++;
+                                    _matchRate = _matchedPosts[_currentMatchIndex].matchRate;
+                                  });
+                                }
+                              : null,
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),
+
 
             const SizedBox(height: 16),
 
@@ -283,6 +365,25 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+  Future<void> _onCloudTap() async {
+    if (_selectedPost == null) return;
+
+    try {
+      final matches = await PostService.getMatchedPosts(_selectedPost!.id);
+      if (matches.isNotEmpty) {
+        print('📦 받아온 유사 게시글 제목: ${matches.first.title}'); // ✅ 여기에 추가
+
+        setState(() {
+          _matchedPosts = matches;
+          _currentMatchIndex = 0;
+          _matchRate = matches.first.matchRate;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ 연관도 계산 실패: $e');
+    }
+  }
+
 }
 
 class FilterButton extends StatelessWidget {

@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'models/post_model.dart';
+import 'screens/post_detail_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/recent_posts_screen.dart';
 import 'screens/login_screen.dart';
@@ -94,12 +96,19 @@ class MyApp extends StatelessWidget {
           );
         }
 
+        if (settings.name == '/post-detail') {
+          final postId = settings.arguments as int; // ✅ postId만 받음
+          return MaterialPageRoute(
+            builder: (_) => PostDetailScreen(postId: postId), // ✅ 수정됨
+          );
+        }
+
         return MaterialPageRoute(
           builder: (_) => const Scaffold(
             body: Center(child: Text('알 수 없는 경로')),
           ),
         );
-      },
+      }
     );
   }
 }

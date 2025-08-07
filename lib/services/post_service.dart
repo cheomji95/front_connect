@@ -2,6 +2,8 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import '../models/post_model.dart';
+import 'package:http/http.dart' as http;
+import '../models/matched_post.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -236,6 +238,18 @@ class PostService {
           .toList();
     } else {
       throw Exception('유저 게시글 로딩 실패: ${response.statusCode}');
+    }
+  }
+  static Future<List<MatchedPost>> getMatchedPosts(int postId) async {
+    final url = Uri.parse('https://connect.io.kr/posts/match?post_id=$postId'); // 주소 수정
+    final response = await http.post(url);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final List<dynamic> matchedList = data['matched_posts'];
+      return matchedList.map((e) => MatchedPost.fromJson(e)).toList();
+    } else {
+      throw Exception('Failed to fetch matched posts');
     }
   }
 }

@@ -403,22 +403,18 @@ class _MapScreenState extends State<MapScreen> {
                                   '${distanceKm.toStringAsFixed(2)} km · $region · $year'),
                               onTap: () async {
                                 try {
-                                  final Post detail =
-                                      await PostService.getPostDetail(id);
+                                  final Post detail = await PostService.getPostDetail(id);
                                   if (!mounted) return;
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) =>
-                                          PostDetailScreen(post: detail),
+                                      builder: (_) => PostDetailScreen(postId: detail.id), // ✅ 수정된 부분
                                     ),
                                   );
                                 } catch (e) {
                                   if (!mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                        content:
-                                            Text('상세 조회 실패: $e')),
+                                    SnackBar(content: Text('상세 조회 실패: $e')),
                                   );
                                 }
                               },

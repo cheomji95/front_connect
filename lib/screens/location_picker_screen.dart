@@ -204,7 +204,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => PostDetailScreen(post: _selectedPost!),
+                      builder: (_) => PostDetailScreen(postId: _selectedPost!.id),
                     ),
                   );
                 },

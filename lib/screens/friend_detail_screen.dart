@@ -61,7 +61,7 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => PostDetailScreen(post: post),
+              builder: (_) => PostDetailScreen(postId: post.id),
             ),
           );
         },

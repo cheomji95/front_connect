@@ -175,8 +175,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           }).toList(),
                           GestureDetector(
                             onTap: () => Navigator.pushNamed(context, '/friends'),
-                            child: Column(
-                              children: const [
+                            child: const Column(
+                              children: [
                                 CircleAvatar(
                                   radius: 24,
                                   backgroundColor: Color(0xFFE0D7F7),

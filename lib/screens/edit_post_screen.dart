@@ -69,7 +69,7 @@ class _EditPostScreenState extends State<EditPostScreen> {
   final LatLng? result = await Navigator.push(
     context,
     MaterialPageRoute(
-      builder: (_) => LocationPickerScreen(
+      builder: (_) => const LocationPickerScreen(
         selectedYear: null,        // ✅ null 또는 String
         selectedRegion: null,      // ✅ null 또는 String
         selectedTags: [],          // ✅ List<String>

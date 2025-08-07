@@ -106,6 +106,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
   }
 
+  Future<void> _deleteAccount() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('회원탈퇴'),
+        content: const Text('정말로 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('탈퇴', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await AuthService.deleteAccount();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('탈퇴 실패: $e')),
+      );
+    }
+  }
+
   @override
   void dispose() {
     nicknameController.dispose();
@@ -210,11 +245,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: TextStyle(color: Colors.red),
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  TextButton.icon(
+                    onPressed: _deleteAccount,
+                    icon: const Icon(Icons.delete_forever, color: Colors.grey),
+                    label: const Text(
+                      '회원탈퇴',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
                 ],
               ),
             ),
     );
   }
 }
+
 
 

@@ -178,5 +178,17 @@ static Future<Map<String, dynamic>> login({
       ),
     );
   }
+  // AuthService.dart 내부
+  static Future<void> deleteAccount() async {
+    final token = await JwtStorage.getAccessToken(); // JWT 토큰 가져오기
+    await dio.delete(
+      '/users/me', // 백엔드의 회원탈퇴 엔드포인트
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token', // 인증 헤더 포함
+        },
+      ),
+    );
+  }
 }
 

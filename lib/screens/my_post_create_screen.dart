@@ -56,7 +56,7 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
       MaterialPageRoute(builder: (_) => LocationPickerScreen(
         selectedYear: selectedYear,
         selectedRegion: selectedRegion,
-        selectedTags: [],
+        selectedTags: const [],
       )),
     );
 

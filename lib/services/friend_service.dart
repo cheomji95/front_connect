@@ -14,7 +14,7 @@ class FriendService {
 
   // ✅ 유저 검색
   Future<List<SearchUser>> searchUsers(String nickname, String token) async {
-    final url = 'https://connect.io.kr/users/search';
+    const url = 'https://connect.io.kr/users/search';
     final headers = {'Authorization': 'Bearer $token'};
 
     print('▶ [searchUsers] 요청 URL: $url?nickname=$nickname');
